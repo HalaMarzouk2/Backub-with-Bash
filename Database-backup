@@ -1,0 +1,40 @@
+#!/user/bin/bash
+#Database credentials
+DB_USER="root"
+DB_PASSWORD="rootmysql"
+DB_NAME="wpdb"
+
+Logs="/var/log/backup/database.txt"
+Date="$(date +%Y-%m-%d)"
+D="$(date +%Y/%m/%d)"
+
+Password_file="/home/scripts/pass.txt"
+
+Password="$(cat "$Password_file")"
+# Backup directory
+BACKUP_DIR="/home/backup_databases"
+mkdir -p "$BACKUP_DIR"
+#Function to check Existence
+Check_Existence() {
+  if [ $? -eq 0 ]; then
+    #remove original file.sql
+    rm -rf "$BACKUP_DIR"/"$DB_NAME-$Date.sql"
+    echo " $D INFO:- successfully Backup  " >> "$Logs" 2>&1
+  else
+    echo "$D ERROR:- gzip not success at $Date " >> "$Logs" 2>&1
+
+  fi
+}
+
+# Backup the MySQL database wpdb
+mysqldump -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" > "$BACKUP_DIR"/"$DB_NAME-$Date.sql"
+
+# Compress and encrypt  backup file
+zip -e -P "$Password" "$BACKUP_DIR"/"$DB_NAME-$Date.sql.zip" "$BACKUP_DIR"/"$DB_NAME-$Date.sql" >> /dev/null 2>&1
+
+#calling Function to check if archive success to remove original file .sql To conserve storage space"
+Check_Existence
+#Rotation backup, The latest seven files
+find "$BACKUP_DIR" -type f -name "*.zip" -mtime +7 -exec rm {} \; >> /dev/null 2>&1
+
+
