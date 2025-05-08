@@ -1,0 +1,65 @@
+#!/user/bin/bash
+# Author: Hala Marzouk
+# Created: 12th jan 2025
+# Last Modified:
+
+## Variables
+D="$(date +%Y/%m/%d)"
+Source_backup1="/home/test/app122"
+Source_backup2="/home/test/app2"
+Destination_backup="/home/backup-task/"
+Date="$(date +%d-%m-%Y)"
+Logs="/var/log/backup/backup.txt"
+
+# Array for source backup folder
+backup=("$Source_backup1" "$Source_backup2")
+
+# Function to check Existence
+Check_Existence() {
+  if [ $? -eq 0 ]; then
+    echo " $D INFO:- Success " >> /dev/null 2>&1
+  else
+    echo " $D not success " >> $Logs 2>&1
+
+  fi
+}
+
+for i in "${backup[@]}"; do
+
+  base=$(basename "$i")
+
+  # Check existence of source folder
+  if [ -d "$i" ]; then
+    cd /home/test/ || exit
+    tar -zcpf "backup_${base}_$Date.tar.gz" "$base" >> /dev/null 2>&1
+    Check_Existence
+
+    echo " $D INFO:- successful Archive Directory  $base , full pathe is $i " >> $Logs 2>&1
+
+  else
+    echo " $D ERROR:- Directory $i not found so this is terminate scri" >> $Logs 2>&1
+
+  fi
+
+  # Check if destination directory exists
+  if [ -d "$Destination_backup" ]; then
+    rsync -ah --remove-source-files "backup_${base}_$Date.tar.gz" "$Destination_backup" >> /dev/null 2>&1
+    #call function
+    Check_Existence
+
+    echo " $D INFO:- successfully Baackup and copy $base to  Destination_backup $Destination_backup" >> $Logs 2>&1
+
+  else
+
+  echo " $D ERROR:- This folder $Destination_backup not found and will create the Folder" >> $Logs 2>&1
+
+    mkdir -p "$Destination_backup"
+    rsync -ah --remove-source-files "backup_${base}_$Date.tar.gz" "$Destination_backup" >> /dev/null 2>&1
+    echo " $D INFO:- successfully Baackup and copy $base to  Destination_backup $Destination_backup" >> $Logs 2>&1
+
+  fi
+
+ echo " $D INFO:- Hello $USER backup success.
+ ____________________ " >> $Logs 2>&1
+
+done
